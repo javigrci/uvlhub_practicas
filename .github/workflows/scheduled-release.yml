@@ -87,6 +87,6 @@ jobs:
       run: |
         gh pr create \
           --title "Release ${{ env.new_version }}" \
-          --body "This pull request prepares the release of version ${{ env.new_version }}." \
+          --body "This pull request prepares the release of a new version." \
           --base main \
           --head develop
