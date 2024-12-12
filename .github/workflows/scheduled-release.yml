@@ -14,16 +14,20 @@ jobs:
     - name: Get the latest tag
       id: get_latest_tag
       run: |
-        # Obtén el último tag, si no existe, usa v0.0.0
+        # Obtener el último tag, si no existe, usa v0.0.0
         latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
 
-    - name: Calculate the next version
-      id: calculate_version
+    - name: Increment the version (e.g., v1.0 -> v1.1)
+      id: increment_version
       run: |
-        # Incrementa la versión menor (minor)
+        # Extraemos la versión actual (por ejemplo v1.0.0)
         IFS='.' read -r major minor patch <<< "${latest_tag#v}"
+        
+        # Aumentamos la versión menor (minor)
         new_version="v$major.$((minor + 1)).0"
+        
+        # Guardamos la nueva versión en el entorno
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
@@ -34,7 +38,7 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        # Crear un nuevo tag y enviarlo
+        # Crear el nuevo tag con la versión incrementada
         git tag ${{ env.new_version }}
         git push origin ${{ env.new_version }}
 
