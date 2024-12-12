@@ -40,7 +40,7 @@ jobs:
           new_version="v1.0"
         fi
         
-        # Guardamos la nueva versión en el entorno
+        # Guardamos la nueva versión
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
@@ -78,4 +78,4 @@ jobs:
           --title "Release ${{ env.new_version }}" \
           --body "This pull request prepares the release of a new version." \
           --base main \
-          --head develop 
+          --head develop
