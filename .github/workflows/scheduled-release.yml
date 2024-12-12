@@ -14,32 +14,33 @@ jobs:
     - name: Get the latest tag
       id: get_latest_tag
       run: |
-        # Obtener el último tag, si no existe, usa v1.0
-        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
+        # Obtener el último tag basado en el patrón vX.X
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
+        echo "Latest tag is: $latest_tag"
 
-    - name: Increment the version (e.g., v1.0 -> v2.0)
+    - name: Increment the version (e.g., v3.0 -> v4.0)
       id: increment_version
       run: |
-        # Extraemos la versión actual (por ejemplo v1.0)
-        IFS='.' read -r major minor <<< "${latest_tag#v}"
+        # Extraemos la versión actual (por ejemplo v3.0)
+        latest_version="${{ env.latest_tag }}"
         
-        # Aumentamos la versión mayor (major)
-        new_version="v$((major + 1)).0"
-        
-        # Guardamos la nueva versión en el entorno
-        echo "new_version=${new_version}" >> $GITHUB_ENV
-        echo "New version calculated: $new_version"
-
-    - name: Delete the existing tag if it exists
-      run: |
-        # Eliminar el tag remoto si ya existe
-        git fetch --tags
-        if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
-          git tag -d ${{ env.new_version }}
-          git push origin :refs/tags/${{ env.new_version }}
-        fi
-
+        # Verificamos que el tag siga el formato vX.Y (ejemplo: v3.0)
+        if [[ "$latest_version" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
+          major=${BASH_REMATCH[1]}
+          minor=${BASH_REMATCH[2]}
+          
+          # Aumentamos la versión mayor
+          new_major=$((major + 1))
+          new_version="v${new_major}.0"
+          
+          # Guardamos la nueva versión
+          echo "new_version=${new_version}" >> $GITHUB_ENV
+          echo "New version calculated: $new_version"
+        else
+          echo "Error: Tag format is not vX.Y"
+          exit 1
+          
     - name: Create a new tag
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
