@@ -61,7 +61,7 @@ jobs:
       id: check_new_tag
       run: |
         # Verificar si el nuevo tag ya existe
-        if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+        if git rev-parse "${{ env.new_version }}" >/dev/null 2>&1; then
           echo "Tag ${{ env.new_version }} already exists."
         else
           echo "Tag ${{ env.new_version }} does not exist. Creating it now."
@@ -89,6 +89,6 @@ jobs:
       run: |
         gh pr create \
           --title "Release ${{ env.new_version }}" \
-          --body "This pull request prepares the release of a new version." \
+          --body "This pull request prepares the release of version ${{ env.new_version }}." \
           --base main \
           --head develop 
