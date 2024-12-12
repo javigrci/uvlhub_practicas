@@ -40,15 +40,16 @@ jobs:
       run: |
         latest_version="${{ env.latest_tag }}"
         
-        # Si el tag es v1.0, lo incrementamos a v2.0
+        # Comprobar si el tag es v1.0 y creamos v2.0
         if [[ "$latest_version" == "v1.0" ]]; then
           new_version="v2.0"
         else
-          # Extraemos la versión mayor (major) y la aumentamos
-          IFS='.' read -r major minor <<< "${latest_version#v}"
+          # Extraemos el número antes del punto en el tag (ej. v3.0 -> 3)
+          version_number="${latest_version#v}"
+          major_version=$(echo $version_number | cut -d'.' -f1)
           
-          # Aumentamos la versión mayor (major)
-          new_major=$((major + 1))
+          # Aumentamos el número de la versión mayor (major)
+          new_major=$((major_version + 1))
           new_version="v${new_major}.0"
         fi
         
@@ -89,4 +90,4 @@ jobs:
           --title "Release ${{ env.new_version }}" \
           --body "This pull request prepares the release of a new version." \
           --base main \
-          --head develop
+          --head develop 
