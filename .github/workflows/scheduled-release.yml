@@ -11,36 +11,53 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Get the latest tag
+    - name: Check if v1.0 tag exists, create if not
+      id: check_tag
+      run: |
+        # Comprobar si el tag v1.0 existe
+        tag_exists=$(git tag --list "v1.0")
+        
+        if [[ -z "$tag_exists" ]]; then
+          echo "Tag v1.0 does not exist, creating it now."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Crear el tag v1.0
+          git tag "v1.0"
+          git push origin "v1.0"
+        else
+          echo "Tag v1.0 already exists."
+        fi
+
+    - name: Get the latest tag or set v1.0 if none exist
       id: get_latest_tag
       run: |
-        # Obtener el último tag basado en el patrón vX.X
-        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
+        # Obtener el último tag, si no existe, usamos v1.0
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
         echo "Latest tag is: $latest_tag"
 
-    - name: Increment the version (e.g., v3.0 -> v4.0)
+    - name: Increment the version (start with v1.0 if no tag exists)
       id: increment_version
       run: |
-        # Extraemos la versión actual (por ejemplo v3.0)
         latest_version="${{ env.latest_tag }}"
         
-        # Verificamos que el tag siga el formato vX.Y (ejemplo: v3.0)
-        if [[ "$latest_version" =~ ^v([0-9]+)\.([0-9]+)$ ]]; then
-          major=${BASH_REMATCH[1]}
-          minor=${BASH_REMATCH[2]}
+        # Si no hay versión previa, empezamos con v1.0
+        if [[ "$latest_version" == "v0.0" || "$latest_version" == "v1.0" ]]; then
+          new_version="v2.0"  # Si el tag es v1.0, lo incrementamos a v2.0
+        else
+          # Extraemos la versión mayor (major) e incrementamos
+          IFS='.' read -r major minor <<< "${latest_version#v}"
           
-          # Aumentamos la versión mayor
+          # Aumentamos la versión mayor (major)
           new_major=$((major + 1))
           new_version="v${new_major}.0"
-          
-          # Guardamos la nueva versión
-          echo "new_version=${new_version}" >> $GITHUB_ENV
-          echo "New version calculated: $new_version"
-        else
-          echo "Error: Tag format is not vX.Y"
-          exit 1
-          
+        fi
+        
+        # Guardamos la nueva versión
+        echo "new_version=${new_version}" >> $GITHUB_ENV
+        echo "New version calculated: $new_version"
+
     - name: Create a new tag
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
