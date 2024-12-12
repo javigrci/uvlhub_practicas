@@ -1,7 +1,7 @@
 name: Scheduled Release with PR
 
 on:
-    workflow_dispatch:
+  workflow_dispatch
 
 jobs:
   create-release:
@@ -18,14 +18,14 @@ jobs:
         latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
 
-    - name: Increment the version (e.g., v1.0 -> v1.1)
+    - name: Increment the version (e.g., v1.0 -> v2.0)
       id: increment_version
       run: |
-        # Extraemos la versión actual (por ejemplo v1.0.0)
-        IFS='.' read -r major minor patch <<< "${latest_tag#v}"
+        # Extraemos la versión actual (por ejemplo v1.0)
+        IFS='.' read -r major minor <<< "${latest_tag#v}"
         
-        # Aumentamos la versión menor (minor)
-        new_version="v$major.$((minor + 1)).0"
+        # Aumentamos la versión mayor (major)
+        new_version="v$((major + 1)).0"
         
         # Guardamos la nueva versión en el entorno
         echo "new_version=${new_version}" >> $GITHUB_ENV
