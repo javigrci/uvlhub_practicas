@@ -1,7 +1,7 @@
 name: Scheduled Release with PR
 
 on:
-    workflow_dispatch
+    workflow_dispatch:
 
 jobs:
   create-release:
@@ -14,8 +14,8 @@ jobs:
     - name: Get the latest tag
       id: get_latest_tag
       run: |
-        # Obtener el último tag, si no existe, usa v0.0.0
-        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        # Obtener el último tag, si no existe, usa v1.0
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
 
     - name: Increment the version (e.g., v1.0 -> v1.1)
@@ -27,15 +27,18 @@ jobs:
         # Aumentamos la versión menor (minor)
         new_version="v$major.$((minor + 1)).0"
         
-        # Comprobar si el nuevo tag ya existe y si es así, incrementa el número de patch
-        while git rev-parse "$new_version" >/dev/null 2>&1; do
-          patch=$((patch + 1))
-          new_version="v$major.$minor.$patch"
-        done
-        
         # Guardamos la nueva versión en el entorno
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
+
+    - name: Delete the existing tag if it exists
+      run: |
+        # Eliminar el tag remoto si ya existe
+        git fetch --tags
+        if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+          git tag -d ${{ env.new_version }}
+          git push origin :refs/tags/${{ env.new_version }}
+        fi
 
     - name: Create a new tag
       env:
