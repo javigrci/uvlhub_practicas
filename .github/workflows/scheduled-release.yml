@@ -53,6 +53,9 @@ jobs:
         else
           echo "Tag ${{ env.new_version }} does not exist. Creating it now."
           git tag ${{ env.new_version }}
+          # Autenticarse en GitHub antes de hacer el push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git push origin ${{ env.new_version }} # Empujamos el nuevo tag a la remota
         fi
 
