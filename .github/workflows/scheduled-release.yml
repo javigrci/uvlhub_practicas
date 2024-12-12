@@ -27,6 +27,12 @@ jobs:
         # Aumentamos la versión menor (minor)
         new_version="v$major.$((minor + 1)).0"
         
+        # Comprobar si el nuevo tag ya existe y si es así, incrementa el número de patch
+        while git rev-parse "$new_version" >/dev/null 2>&1; do
+          patch=$((patch + 1))
+          new_version="v$major.$minor.$patch"
+        done
+        
         # Guardamos la nueva versión en el entorno
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
