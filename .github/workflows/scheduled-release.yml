@@ -1,11 +1,6 @@
 name: Scheduled Release with PR
 
 on:
-  # Ejecutar automáticamente a las 19:30 UTC
-  schedule:
-    - cron: '30 19 * * *'
-
-  # Permite ejecución manual para pruebas
   workflow_dispatch:
 
 jobs:
