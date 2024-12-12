@@ -89,5 +89,4 @@ jobs:
           --title "Release ${{ env.new_version }}" \
           --body "This pull request prepares the release of version ${{ env.new_version }}." \
           --base main \
-          --head develop \
-          --draft false
+          --head develop
