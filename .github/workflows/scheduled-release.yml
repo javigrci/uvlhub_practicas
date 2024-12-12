@@ -2,7 +2,7 @@ name: Scheduled Release with PR
 
 on:
   schedule:
-    - cron: '32 * * * *'  # Esto ejecuta el workflow todos los días a cualquier hora en el minuto 32
+    - cron: '36 * * * *'  # Esto ejecuta el workflow todos los días a cualquier hora en el minuto 32
 
 jobs:
   create-release:
