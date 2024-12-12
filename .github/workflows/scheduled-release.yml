@@ -11,32 +11,63 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Get the latest tag
+    - name: Fetch all tags from remote
+      run: |
+        git fetch --tags
+
+    - name: Check if v1.0 exists, if not create it
+      id: check_v1_tag
+      run: |
+        # Comprobar si el tag v1.0 existe
+        if git rev-parse "v1.0" >/dev/null 2>&1; then
+          echo "Tag v1.0 already exists."
+        else
+          echo "Tag v1.0 does not exist, creating it now."
+          git tag v1.0
+          git push origin v1.0
+        fi
+
+    - name: Get the latest tag (or create v1.0 if no tags exist)
       id: get_latest_tag
       run: |
-        # Obtén el último tag, si no existe, usa v1.0
+        # Obtener el último tag, si no existe, usar v1.0
         latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
+        echo "Latest tag is: $latest_tag"
 
-    - name: Calculate the next version
-      id: calculate_version
+    - name: Increment the version (e.g., v1.0 -> v2.0, v2.0 -> v3.0)
+      id: increment_version
       run: |
-        # Incrementa la versión menor (minor)
-        IFS='.' read -r major minor patch <<< "${latest_tag#v}"
-        new_version="v$major.$((minor + 1)).0"
+        latest_version="${{ env.latest_tag }}"
+        
+        # Si el último tag es v1.0, se crea v2.0, etc.
+        if [[ "$latest_version" == "v1.0" ]]; then
+          new_version="v2.0"
+        else
+          # Extraemos el número antes del punto en el tag (ej. v3.0 -> 3)
+          version_number="${latest_version#v}"
+          major_version=$(echo $version_number | cut -d'.' -f1)
+          
+          # Aumentamos el número de la versión mayor (major)
+          new_major=$((major_version + 1))
+          new_version="v${new_major}.0"
+        fi
+        
+        # Guardamos la nueva versión
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
-    - name: Create a new tag and push it
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Check if the new tag already exists
+      id: check_new_tag
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-        # Crear un nuevo tag y enviarlo
-        git tag ${{ env.new_version }}
-        git push origin ${{ env.new_version }}
+        # Verificar si el nuevo tag ya existe
+        if git rev-parse "${{ env.new_version }}" >/dev/null 2>&1; then
+          echo "Tag ${{ env.new_version }} already exists."
+        else
+          echo "Tag ${{ env.new_version }} does not exist. Creating it now."
+          git tag ${{ env.new_version }}
+          git push origin ${{ env.new_version }}
+        fi
 
   create-pull-request:
     runs-on: ubuntu-latest
@@ -46,16 +77,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Install GitHub CLI
+      run: |
+        sudo apt-get install gh
+
+    - name: Authenticate GitHub CLI
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
     - name: Create Pull Request from develop to main
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        source-branch: develop
-        target-branch: main
-        title: "Release ${{ env.new_version }}"
-        body: |
-          This pull request prepares the release of version ${{ env.new_version }}.
-          It includes:
-          - Changes merged into develop
-          - The new tag: ${{ env.new_version }}
-        draft: false
+      run: |
+        gh pr create \
+          --title "Release ${{ env.new_version }}" \
+          --body "This pull request prepares the release of version ${{ env.new_version }}." \
+          --base main \
+          --head develop 
