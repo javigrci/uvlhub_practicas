@@ -59,13 +59,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Install GitHub CLI
+      run: |
+        sudo apt-get install gh
+
+    - name: Authenticate GitHub CLI
+      run: gh auth login --with-token < ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create Pull Request from develop to main
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        base: main             # Rama de destino
-        branch: develop        # Rama fuente
-        title: "Release ${{ env.new_version }}"
-        body: |
-          This pull request prepares the release of version ${{ env.new_version }}.
-        draft: false            # No crear la PR como borrador
+      run: |
+        gh pr create \
+          --title "Release ${{ env.new_version }}" \
+          --body "This pull request prepares the release of version ${{ env.new_version }}." \
+          --base main \
+          --head develop \
+          --draft false
