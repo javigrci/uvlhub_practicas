@@ -11,42 +11,40 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Check if v1.0 tag exists, create if not
-      id: check_tag
+    - name: Fetch all tags from remote
+      run: |
+        git fetch --tags
+
+    - name: Check if v1.0 exists, if not create it
+      id: check_v1_tag
       run: |
         # Comprobar si el tag v1.0 existe
-        tag_exists=$(git tag --list "v1.0")
-        
-        if [[ -z "$tag_exists" ]]; then
-          echo "Tag v1.0 does not exist, creating it now."
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Crear el tag v1.0
-          git tag "v1.0"
-          git push origin "v1.0"
-        else
+        if git rev-parse "v1.0" >/dev/null 2>&1; then
           echo "Tag v1.0 already exists."
+        else
+          echo "Tag v1.0 does not exist, creating it now."
+          git tag v1.0
+          git push origin v1.0
         fi
 
-    - name: Get the latest tag or set v1.0 if none exist
+    - name: Get the latest tag (or create v1.0 if no tags exist)
       id: get_latest_tag
       run: |
-        # Obtener el último tag, si no existe, usamos v1.0
+        # Obtener el último tag, si no existe, usar v1.0
         latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0")
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
         echo "Latest tag is: $latest_tag"
 
-    - name: Increment the version (start with v1.0 if no tag exists)
+    - name: Increment the version (e.g., v1.0 -> v2.0, v2.0 -> v3.0)
       id: increment_version
       run: |
         latest_version="${{ env.latest_tag }}"
         
-        # Si no hay versión previa, empezamos con v1.0
-        if [[ "$latest_version" == "v0.0" || "$latest_version" == "v1.0" ]]; then
-          new_version="v2.0"  # Si el tag es v1.0, lo incrementamos a v2.0
+        # Si el tag es v1.0, lo incrementamos a v2.0
+        if [[ "$latest_version" == "v1.0" ]]; then
+          new_version="v2.0"
         else
-          # Extraemos la versión mayor (major) e incrementamos
+          # Extraemos la versión mayor (major) y la aumentamos
           IFS='.' read -r major minor <<< "${latest_version#v}"
           
           # Aumentamos la versión mayor (major)
