@@ -14,7 +14,6 @@ jobs:
     - name: Fetch all tags from remote
       run: |
         git fetch --tags
-        git tag -l  # Mostrar todos los tags locales para depuración
 
     - name: Get the latest tag (if exists)
       id: get_latest_tag
@@ -30,9 +29,11 @@ jobs:
         latest_version="${{ env.latest_tag }}"
         
         # Comprobar si el último tag es una versión válida
-        if [[ "$latest_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
+        if [[ "$latest_version" =~ ^v?[0-9]+\.[0-9]+$ ]]; then
           # Extraer el número antes del punto (X de vX.Y)
-          major_version="${latest_version%.*}"
+          major_version="${latest_version#v}"  # Eliminar la 'v' si está presente
+          major_version="${major_version%.*}"  # Eliminar la parte después del punto
+          
           # Incrementar la versión mayor
           new_version=$((major_version + 1))
           new_version="v${new_version}.0"
@@ -53,23 +54,10 @@ jobs:
           echo "Tag ${{ env.new_version }} already exists."
         else
           echo "Tag ${{ env.new_version }} does not exist. Creating it now."
+          
+          # Crear el nuevo tag
           git tag ${{ env.new_version }}
-          
-          # Mostrar todos los tags locales después de crear el nuevo tag para depuración
-          git tag -l
-
-          # Configuración de Git para el push
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Mostrar el estado de git antes de hacer push
-          git status
-
-          # Empujar el nuevo tag al repositorio remoto
           git push origin ${{ env.new_version }}
-          
-          # Confirmar que el tag se empujó al repositorio remoto
-          git ls-remote --tags
         fi
 
   create-pull-request:
