@@ -40,7 +40,7 @@ jobs:
       run: |
         latest_version="${{ env.latest_tag }}"
         
-        # Comprobar si el tag es v1.0 y creamos v2.0
+        # Si el último tag es v1.0, se crea v2.0, etc.
         if [[ "$latest_version" == "v1.0" ]]; then
           new_version="v2.0"
         else
@@ -57,16 +57,17 @@ jobs:
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
-    - name: Create a new tag
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Check if the new tag already exists
+      id: check_new_tag
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-        # Crear el nuevo tag con la versión incrementada
-        git tag ${{ env.new_version }}
-        git push origin ${{ env.new_version }}
+        # Verificar si el nuevo tag ya existe
+        if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+          echo "Tag ${{ env.new_version }} already exists."
+        else
+          echo "Tag ${{ env.new_version }} does not exist. Creating it now."
+          git tag ${{ env.new_version }}
+          git push origin ${{ env.new_version }}
+        fi
 
   create-pull-request:
     runs-on: ubuntu-latest
