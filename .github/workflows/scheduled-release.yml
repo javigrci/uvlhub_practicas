@@ -18,7 +18,6 @@ jobs:
     - name: Get the latest tag (if exists)
       id: get_latest_tag
       run: |
-        # Obtener todos los tags y ordenar por el más reciente
         latest_tag=$(git tag --list | sort -V | tail -n 1)
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
         echo "Latest tag found: $latest_tag"
@@ -28,35 +27,29 @@ jobs:
       run: |
         latest_version="${{ env.latest_tag }}"
         
-        # Comprobar si el último tag es una versión válida
-        if [[ "$latest_version" =~ ^[0-9]+\.[0-9]+$ ]]; then
-          # Extraer el número antes del punto (X de vX.Y)
-          major_version="${latest_version%.*}"
-          # Incrementar la versión mayor
+        if [[ "$latest_version" =~ ^v?[0-9]+\.[0-9]+$ ]]; then
+          major_version="${latest_version#v}"
+          major_version="${major_version%.*}"
+          
           new_version=$((major_version + 1))
           new_version="v${new_version}.0"
         else
-          # Si el último tag no es válido, empezar desde v1.0
           new_version="v1.0"
         fi
         
-        # Guardamos la nueva versión
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
     - name: Check if the new tag already exists
       id: check_new_tag
       run: |
-        # Verificar si el nuevo tag ya existe
         if git rev-parse "${{ env.new_version }}" >/dev/null 2>&1; then
           echo "Tag ${{ env.new_version }} already exists."
         else
           echo "Tag ${{ env.new_version }} does not exist. Creating it now."
+          
           git tag ${{ env.new_version }}
-          # Autenticarse en GitHub antes de hacer el push
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git push origin ${{ env.new_version }} # Empujamos el nuevo tag a la remota
+          git push origin ${{ env.new_version }}
         fi
 
   create-pull-request:
@@ -75,10 +68,16 @@ jobs:
       run: |
         echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
+    - name: Get Current Date
+      id: get_date
+      run: |
+        current_date=$(date +'%d-%m-%Y')
+        echo "current_date=${current_date}" >> $GITHUB_ENV
+
     - name: Create Pull Request from develop to main
       run: |
         gh pr create \
-          --title "Release ${{ env.new_version }}" \
+          --title "Release/${{ env.current_date }}" \
           --body "This pull request prepares the release of a new version." \
           --base main \
           --head develop
