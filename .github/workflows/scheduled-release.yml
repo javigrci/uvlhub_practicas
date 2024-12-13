@@ -18,7 +18,6 @@ jobs:
     - name: Get the latest tag (if exists)
       id: get_latest_tag
       run: |
-        # Obtener todos los tags y ordenar por el más reciente
         latest_tag=$(git tag --list | sort -V | tail -n 1)
         echo "latest_tag=${latest_tag}" >> $GITHUB_ENV
         echo "Latest tag found: $latest_tag"
@@ -28,34 +27,27 @@ jobs:
       run: |
         latest_version="${{ env.latest_tag }}"
         
-        # Comprobar si el último tag es una versión válida
         if [[ "$latest_version" =~ ^v?[0-9]+\.[0-9]+$ ]]; then
-          # Extraer el número antes del punto (X de vX.Y)
-          major_version="${latest_version#v}"  # Eliminar la 'v' si está presente
-          major_version="${major_version%.*}"  # Eliminar la parte después del punto
+          major_version="${latest_version#v}"
+          major_version="${major_version%.*}"
           
-          # Incrementar la versión mayor
           new_version=$((major_version + 1))
           new_version="v${new_version}.0"
         else
-          # Si el último tag no es válido, empezar desde v1.0
           new_version="v1.0"
         fi
         
-        # Guardamos la nueva versión
         echo "new_version=${new_version}" >> $GITHUB_ENV
         echo "New version calculated: $new_version"
 
     - name: Check if the new tag already exists
       id: check_new_tag
       run: |
-        # Verificar si el nuevo tag ya existe
         if git rev-parse "${{ env.new_version }}" >/dev/null 2>&1; then
           echo "Tag ${{ env.new_version }} already exists."
         else
           echo "Tag ${{ env.new_version }} does not exist. Creating it now."
           
-          # Crear el nuevo tag
           git tag ${{ env.new_version }}
           git push origin ${{ env.new_version }}
         fi
@@ -79,7 +71,6 @@ jobs:
     - name: Get Current Date
       id: get_date
       run: |
-        # Obtener la fecha actual en formato DD-MM-YYYY
         current_date=$(date +'%d-%m-%Y')
         echo "current_date=${current_date}" >> $GITHUB_ENV
 
