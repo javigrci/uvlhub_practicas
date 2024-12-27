@@ -80,7 +80,7 @@
                     <div class="col-12">
                         {{ form.orcid.label(class="form-label") }}
                         {% set orcid_value = form.orcid.data if form.orcid.data else (current_user.profile.orcid  if current_user.profile.orcid else '') %}
-                        {{ form.orcid(class="form-control", placeholder="Enter your ORCID (0000-0123-4567-8901)",
+                        {{ form.orcid(class="form-control", placeholder="Enter your ORCID  please(0000-0123-4567-8901)",
                         required=true, value=orcid_value) }}
                         {% for error in form.orcid.errors %}
                             <span style="color: red;">{{ error }}</span>
